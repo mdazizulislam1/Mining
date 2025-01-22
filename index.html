@@ -91,23 +91,17 @@
 
         // Start Mining
         function startMining() {
-            // Save the start time if it's not already saved
-            if (!localStorage.getItem(MINING_START_TIME_KEY)) {
-                localStorage.setItem(MINING_START_TIME_KEY, Date.now());
-            }
-
-            // Update status and button
-            statusEl.textContent = "Mining is running...";
-            startButton.disabled = true;
+            const currentTime = Date.now();
+            localStorage.setItem(MINING_START_TIME_KEY, currentTime);
             localStorage.setItem(IS_MINING_KEY, true);
 
-            // Calculate elapsed time
-            let startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+            statusEl.textContent = "Mining is running...";
+            startButton.disabled = true;
 
             miningInterval = setInterval(() => {
+                const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
                 const elapsed = Date.now() - startTime;
 
-                // Add mining rate every 5 seconds
                 if (elapsed % 5000 < 50) {
                     sessionMining += miningRate;
                     totalMining += miningRate;
@@ -116,14 +110,13 @@
                     updateUI();
                 }
 
-                // End session after 12 hours
                 if (elapsed >= sessionDuration) {
                     clearInterval(miningInterval);
                     sessionCount++;
                     miningRate += 0.0001; // Increase rate after each session
                     localStorage.setItem(SESSION_COUNT_KEY, sessionCount);
-                    localStorage.removeItem(SESSION_MINING_KEY); // Reset session mining
-                    localStorage.removeItem(MINING_START_TIME_KEY); // Reset start time
+                    localStorage.removeItem(SESSION_MINING_KEY);
+                    localStorage.removeItem(MINING_START_TIME_KEY);
                     localStorage.setItem(IS_MINING_KEY, false);
                     sessionMining = 0;
                     updateUI();
@@ -136,8 +129,18 @@
         // Resume Mining if Active
         function resumeMining() {
             if (isMining) {
-                const elapsed = Date.now() - parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+                const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+                const elapsed = Date.now() - startTime;
+
+                // Add missing time if session was interrupted
                 if (elapsed < sessionDuration) {
+                    const remainingTime = sessionDuration - elapsed;
+                    const additionalMining = (remainingTime / 5000) * miningRate;
+                    sessionMining += additionalMining;
+                    totalMining += additionalMining;
+                    localStorage.setItem(SESSION_MINING_KEY, sessionMining.toFixed(4));
+                    localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
+                    updateUI();
                     startMining();
                 } else {
                     // Reset session if 12 hours have passed
