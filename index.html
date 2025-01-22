@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mining App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .mining-active {
+            color: red;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mining</h1>
+        <p>Your Mining Rate: <span id="miningRate">0.0001 DOGE</span></p>
+        <p>12 Hour Mining: <span id="sessionMining">0.0000 DOGE</span></p>
+        <p>Total Mining: <span id="totalMining">0.0000 DOGE</span></p>
+        <p>Mining Sessions Completed: <span id="sessionsCompleted">0</span></p>
+        <button id="startMining">Start Mining</button>
+        <p class="status"></p>
+    </div>
+
+    <script>
+        // Initial Variables
+        let miningRate = 0.0001;
+        let sessionMining = parseFloat(localStorage.getItem('sessionMining')) || 0;
+        let totalMining = parseFloat(localStorage.getItem('totalMining')) || 0;
+        let sessionsCompleted = parseInt(localStorage.getItem('sessionsCompleted')) || 0;
+        let miningActive = false;
+        let miningInterval, sessionTimer;
+
+        // DOM Elements
+        const miningRateEl = document.getElementById('miningRate');
+        const sessionMiningEl = document.getElementById('sessionMining');
+        const totalMiningEl = document.getElementById('totalMining');
+        const sessionsCompletedEl = document.getElementById('sessionsCompleted');
+        const startMiningBtn = document.getElementById('startMining');
+        const statusEl = document.querySelector('.status');
+
+        // Update UI
+        function updateUI() {
+            sessionMiningEl.textContent = sessionMining.toFixed(4) + ' DOGE';
+            totalMiningEl.textContent = totalMining.toFixed(4) + ' DOGE';
+            sessionsCompletedEl.textContent = sessionsCompleted;
+        }
+
+        // Start Mining Function
+        function startMining() {
+            if (miningActive) return;
+            miningActive = true;
+            startMiningBtn.disabled = true;
+            statusEl.textContent = 'Mining in progress...';
+            statusEl.classList.add('mining-active');
+
+            let sessionTime = 12 * 60 * 60; // 12 hours in seconds
+            let ratePerSecond = miningRate / (60 * 60 * 2); // Update every 5 seconds
+
+            miningInterval = setInterval(() => {
+                sessionMining += ratePerSecond;
+                totalMining += ratePerSecond;
+                localStorage.setItem('sessionMining', sessionMining);
+                localStorage.setItem('totalMining', totalMining);
+                updateUI();
+            }, 5000);
+
+            sessionTimer = setTimeout(() => {
+                clearInterval(miningInterval);
+                miningActive = false;
+                startMiningBtn.disabled = false;
+                statusEl.textContent = '';
+                statusEl.classList.remove('mining-active');
+                sessionMining = 0;
+                miningRate *= 2;
+                sessionsCompleted++;
+                localStorage.setItem('sessionMining', sessionMining);
+                localStorage.setItem('sessionsCompleted', sessionsCompleted);
+                localStorage.setItem('miningRate', miningRate);
+                miningRateEl.textContent = miningRate.toFixed(4) + ' DOGE';
+                updateUI();
+            }, sessionTime * 1000);
+        }
+
+        // Event Listeners
+        startMiningBtn.addEventListener('click', startMining);
+
+        // Load Initial Data
+        updateUI();
+    </script>
+</body>
+</html>
