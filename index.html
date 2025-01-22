@@ -102,6 +102,7 @@ function startMining() {
         const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
         const elapsed = Date.now() - startTime;
 
+        // Update session and total mining every 5 seconds
         if (elapsed % 5000 < 50) {
             sessionMining += miningRate;
             totalMining += miningRate;
@@ -110,6 +111,7 @@ function startMining() {
             updateUI();
         }
 
+        // End the mining session after 12 hours
         if (elapsed >= sessionDuration) {
             clearInterval(miningInterval);
             sessionCount++;
@@ -151,7 +153,10 @@ function resumeMining() {
 
 // Event Listener for Start Button
 startButton.addEventListener("click", () => {
-    startMining();
+    // If mining is not already running, then start the mining session
+    if (!isMining) {
+        startMining();
+    }
 });
 
 // Initialize UI on Load
