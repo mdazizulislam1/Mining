@@ -64,6 +64,7 @@ const SESSION_MINING_KEY = "sessionMining";
 const SESSION_COUNT_KEY = "sessionCount";
 const MINING_START_TIME_KEY = "miningStartTime";
 const IS_MINING_KEY = "isMining";
+const OFFLINE_TIME_KEY = "offlineTime";
 
 // Initialize Variables
 let miningRate = 0.0001; // Initial rate
@@ -71,6 +72,7 @@ let sessionMining = parseFloat(localStorage.getItem(SESSION_MINING_KEY)) || 0.00
 let totalMining = parseFloat(localStorage.getItem(TOTAL_MINING_KEY)) || 0.0000;
 let sessionCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY)) || 0;
 let isMining = JSON.parse(localStorage.getItem(IS_MINING_KEY)) || false;
+let offlineTime = parseInt(localStorage.getItem(OFFLINE_TIME_KEY)) || 0; // Time spent offline
 let miningInterval;
 const sessionDuration = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
@@ -94,6 +96,7 @@ function startMining() {
     const currentTime = Date.now();
     localStorage.setItem(MINING_START_TIME_KEY, currentTime);
     localStorage.setItem(IS_MINING_KEY, true);
+    localStorage.setItem(OFFLINE_TIME_KEY, 0); // Reset offline time
 
     statusEl.textContent = "Mining is running...";
     startButton.disabled = true;
@@ -102,7 +105,6 @@ function startMining() {
         const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
         const elapsed = Date.now() - startTime;
 
-        // Update session and total mining every 5 seconds
         if (elapsed % 5000 < 50) {
             sessionMining += miningRate;
             totalMining += miningRate;
@@ -111,7 +113,6 @@ function startMining() {
             updateUI();
         }
 
-        // End the mining session after 12 hours
         if (elapsed >= sessionDuration) {
             clearInterval(miningInterval);
             sessionCount++;
@@ -128,26 +129,45 @@ function startMining() {
     }, 1000);
 }
 
-// Resume Mining if Active and Calculate Missing Mining
-function resumeMining() {
-    const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+// Calculate missed mining for offline time
+function calculateMissedMining() {
+    const offlineDuration = offlineTime; // Time spent offline in ms
+    if (offlineDuration > 0) {
+        // Calculate missed mining during offline period
+        const missedMining = (offlineDuration / 5000) * miningRate;
+        sessionMining += missedMining;
+        totalMining += missedMining;
 
-    // If mining is active, calculate missing mining
+        localStorage.setItem(SESSION_MINING_KEY, sessionMining.toFixed(4));
+        localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
+        updateUI();
+    }
+}
+
+// Resume Mining and Calculate Missed Mining
+function resumeMining() {
     if (isMining) {
+        const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
         const elapsed = Date.now() - startTime;
-        
+
         // If time has been missed due to phone off or internet off
         if (elapsed < sessionDuration) {
+            // Find out how much time has been missed (offline time)
+            offlineTime = parseInt(localStorage.getItem(OFFLINE_TIME_KEY)) || 0;
             const remainingTime = sessionDuration - elapsed;
-            const additionalMining = (remainingTime / 5000) * miningRate; // Calculate how much mining would have happened
-            sessionMining += additionalMining; // Add the missed mining to sessionMining
-            totalMining += additionalMining; // Add the missed mining to totalMining
 
-            localStorage.setItem(SESSION_MINING_KEY, sessionMining.toFixed(4));
-            localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
-            updateUI();
+            if (remainingTime > 0) {
+                // Calculate the missed mining and add it
+                const additionalMining = (remainingTime / 5000) * miningRate;
+                sessionMining += additionalMining;
+                totalMining += additionalMining;
+
+                localStorage.setItem(SESSION_MINING_KEY, sessionMining.toFixed(4));
+                localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
+                updateUI();
+            }
         }
-        // Restart mining session after missing time has been added
+
         startMining();
     }
 }
@@ -164,6 +184,21 @@ startButton.addEventListener("click", () => {
 rateEl.textContent = miningRate.toFixed(4) + " DOGE";
 updateUI();
 resumeMining();
+
+// Track Offline Time
+window.addEventListener("blur", () => {
+    // Track offline time when the window goes out of focus
+    const offlineStartTime = Date.now();
+    localStorage.setItem(OFFLINE_TIME_KEY, offlineStartTime);
+});
+
+window.addEventListener("focus", () => {
+    // Track when the window comes back into focus
+    const offlineEndTime = Date.now();
+    const offlineDuration = offlineEndTime - parseInt(localStorage.getItem(OFFLINE_TIME_KEY));
+    localStorage.setItem(OFFLINE_TIME_KEY, offlineDuration);
+    calculateMissedMining();
+});
     </script>
 </body>
 </html>
