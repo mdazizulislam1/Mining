@@ -3,126 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mining App</title>
+    <title>Mining Popup</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
             margin: 20px;
             text-align: center;
         }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: #fff;
+        .popup {
+            width: 300px;
             padding: 20px;
+            border: 1px solid #ccc;
+            margin: 0 auto;
+            background-color: #f9f9f9;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        }
-        h1 {
-            color: #333;
         }
         .status {
-            margin-top: 20px;
-            font-size: 1.2em;
+            color: red;
             font-weight: bold;
+            margin-top: 10px;
         }
         button {
             padding: 10px 20px;
-            font-size: 16px;
-            color: #fff;
             background-color: #007bff;
+            color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
         button:disabled {
             background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .mining-active {
-            color: red;
-            font-size: 1em;
-            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Mining</h1>
-        <p>Your Mining Rate: <span id="miningRate">0.0001 DOGE</span></p>
-        <p>12 Hour Mining: <span id="sessionMining">0.0000 DOGE</span></p>
-        <p>Total Mining: <span id="totalMining">0.0000 DOGE</span></p>
-        <p>Mining Sessions Completed: <span id="sessionsCompleted">0</span></p>
-        <button id="startMining">Start Mining</button>
-        <p class="status"></p>
+    <div class="popup">
+        <h1>মাইনিং</h1>
+        <p>ইউর মাইনিং রেট: <span id="miningRate">0.0001</span> DOGE</p>
+        <p>মাইনিং সেশন টাইম: <span id="sessionTime">12:00:00</span></p>
+        <p>মোট মাইনিং: <span id="totalMining">0.0000</span> DOGE</p>
+        <p>মাইনিং সেশন: <span id="sessionCount">0</span></p>
+        <button id="startButton">স্টার্ট মাইনিং</button>
+        <div class="status" id="statusMessage"></div>
     </div>
 
     <script>
-        // Initial Variables
-        let miningRate = 0.0001;
-        let sessionMining = parseFloat(localStorage.getItem('sessionMining')) || 0;
-        let totalMining = parseFloat(localStorage.getItem('totalMining')) || 0;
-        let sessionsCompleted = parseInt(localStorage.getItem('sessionsCompleted')) || 0;
-        let miningActive = false;
-        let miningInterval, sessionTimer;
+        // Initial Data from Local Storage
+        let miningRate = parseFloat(localStorage.getItem('miningRate')) || 0.0001;
+        let totalMining = parseFloat(localStorage.getItem('totalMining')) || 0.0000;
+        let sessionCount = parseInt(localStorage.getItem('sessionCount')) || 0;
+        let isMining = false;
 
-        // DOM Elements
         const miningRateEl = document.getElementById('miningRate');
-        const sessionMiningEl = document.getElementById('sessionMining');
         const totalMiningEl = document.getElementById('totalMining');
-        const sessionsCompletedEl = document.getElementById('sessionsCompleted');
-        const startMiningBtn = document.getElementById('startMining');
-        const statusEl = document.querySelector('.status');
+        const sessionCountEl = document.getElementById('sessionCount');
+        const startButton = document.getElementById('startButton');
+        const statusMessage = document.getElementById('statusMessage');
 
         // Update UI
-        function updateUI() {
-            sessionMiningEl.textContent = sessionMining.toFixed(4) + ' DOGE';
-            totalMiningEl.textContent = totalMining.toFixed(4) + ' DOGE';
-            sessionsCompletedEl.textContent = sessionsCompleted;
-        }
+        miningRateEl.textContent = miningRate.toFixed(4);
+        totalMiningEl.textContent = totalMining.toFixed(4);
+        sessionCountEl.textContent = sessionCount;
 
-        // Start Mining Function
+        // Start Mining Logic
         function startMining() {
-            if (miningActive) return;
-            miningActive = true;
-            startMiningBtn.disabled = true;
-            statusEl.textContent = 'Mining in progress...';
-            statusEl.classList.add('mining-active');
+            if (isMining) return;
 
-            let sessionTime = 12 * 60 * 60; // 12 hours in seconds
-            let ratePerSecond = miningRate / (60 * 60 * 2); // Update every 5 seconds
+            isMining = true;
+            startButton.disabled = true;
+            statusMessage.textContent = 'মাইনিং চলতেছে...';
 
-            miningInterval = setInterval(() => {
-                sessionMining += ratePerSecond;
-                totalMining += ratePerSecond;
-                localStorage.setItem('sessionMining', sessionMining);
-                localStorage.setItem('totalMining', totalMining);
-                updateUI();
-            }, 5000);
+            let sessionMining = 0.0000;
+            let timeLeft = 12 * 60 * 60; // 12 hours in seconds
 
-            sessionTimer = setTimeout(() => {
-                clearInterval(miningInterval);
-                miningActive = false;
-                startMiningBtn.disabled = false;
-                statusEl.textContent = '';
-                statusEl.classList.remove('mining-active');
-                sessionMining = 0;
-                miningRate *= 2;
-                sessionsCompleted++;
-                localStorage.setItem('sessionMining', sessionMining);
-                localStorage.setItem('sessionsCompleted', sessionsCompleted);
-                localStorage.setItem('miningRate', miningRate);
-                miningRateEl.textContent = miningRate.toFixed(4) + ' DOGE';
-                updateUI();
-            }, sessionTime * 1000);
+            const timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    sessionCount++;
+                    miningRate += 0.0001;
+                    totalMining += sessionMining;
+
+                    // Save to Local Storage
+                    localStorage.setItem('miningRate', miningRate);
+                    localStorage.setItem('totalMining', totalMining);
+                    localStorage.setItem('sessionCount', sessionCount);
+
+                    // Reset UI and Values
+                    sessionMining = 0.0000;
+                    isMining = false;
+                    startButton.disabled = false;
+                    statusMessage.textContent = '';
+                    miningRateEl.textContent = miningRate.toFixed(4);
+                    totalMiningEl.textContent = totalMining.toFixed(4);
+                    sessionCountEl.textContent = sessionCount;
+                } else {
+                    sessionMining += miningRate;
+                    timeLeft -= 5;
+
+                    // Update UI
+                    totalMiningEl.textContent = (totalMining + sessionMining).toFixed(4);
+                    const hours = Math.floor(timeLeft / 3600);
+                    const minutes = Math.floor((timeLeft % 3600) / 60);
+                    const seconds = timeLeft % 60;
+                    document.getElementById('sessionTime').textContent =
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 5000); // Update every 5 seconds
         }
 
-        // Event Listeners
-        startMiningBtn.addEventListener('click', startMining);
-
-        // Load Initial Data
-        updateUI();
+        startButton.addEventListener('click', startMining);
     </script>
 </body>
 </html>
