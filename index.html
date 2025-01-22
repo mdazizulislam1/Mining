@@ -130,13 +130,14 @@ function startMining() {
 
 // Resume Mining if Active and Calculate Missing Mining
 function resumeMining() {
-    if (isMining) {
-        const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
-        const elapsed = Date.now() - startTime;
+    const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
 
+    // If mining is active, calculate missing mining
+    if (isMining) {
+        const elapsed = Date.now() - startTime;
+        
         // If time has been missed due to phone off or internet off
         if (elapsed < sessionDuration) {
-            // Find out how much time has been missed
             const remainingTime = sessionDuration - elapsed;
             const additionalMining = (remainingTime / 5000) * miningRate; // Calculate how much mining would have happened
             sessionMining += additionalMining; // Add the missed mining to sessionMining
@@ -146,7 +147,7 @@ function resumeMining() {
             localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
             updateUI();
         }
-
+        // Restart mining session after missing time has been added
         startMining();
     }
 }
