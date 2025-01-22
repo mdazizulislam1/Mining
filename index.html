@@ -147,18 +147,18 @@ function calculateMissedMining() {
 
 // Resume Mining and Calculate Missed Mining
 function resumeMining() {
-    // চেক করুন যদি মাইনিং চলছে
     if (isMining) {
         const startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
         const elapsed = Date.now() - startTime;
 
-        // যদি এখনও সেশন শেষ না হয়, তাহলে অফলাইনের সময়ের জন্য মিসড মাইনিং যোগ করুন
+        // If time has been missed due to phone off or internet off
         if (elapsed < sessionDuration) {
+            // Find out how much time has been missed (offline time)
             offlineTime = parseInt(localStorage.getItem(OFFLINE_TIME_KEY)) || 0;
             const remainingTime = sessionDuration - elapsed;
 
             if (remainingTime > 0) {
-                // মিসড মাইনিং যোগ করুন
+                // Calculate the missed mining and add it
                 const additionalMining = (remainingTime / 5000) * miningRate;
                 sessionMining += additionalMining;
                 totalMining += additionalMining;
@@ -168,9 +168,14 @@ function resumeMining() {
                 updateUI();
             }
         }
-    } else {
-        // যদি মাইনিং চলছে না, তাহলে নতুন সেশন শুরু করুন
-        startMining();
+
+        // Only restart mining if session has not yet finished
+        const startTimeInStorage = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+        const elapsedTime = Date.now() - startTimeInStorage;
+
+        if (elapsedTime < sessionDuration) {
+            startMining();
+        }
     }
 }
 
@@ -185,13 +190,7 @@ startButton.addEventListener("click", () => {
 // Initialize UI on Load
 rateEl.textContent = miningRate.toFixed(4) + " DOGE";
 updateUI();
-
-// Check if mining is active on page load, if yes resume the mining
-if (isMining) {
-    resumeMining();  // If mining is already running, just resume the mining
-} else {
-    updateUI();  // Otherwise, just update the UI without starting a new session
-}
+resumeMining();
 
 // Track Offline Time
 window.addEventListener("blur", () => {
