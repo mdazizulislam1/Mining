@@ -48,70 +48,63 @@
     </div>
 
     <script>
-        // Initial Data from Local Storage
-        let miningRate = parseFloat(localStorage.getItem('miningRate')) || 0.0001;
-        let totalMining = parseFloat(localStorage.getItem('totalMining')) || 0.0000;
-        let sessionCount = parseInt(localStorage.getItem('sessionCount')) || 0;
-        let isMining = false;
+        document.addEventListener('DOMContentLoaded', () => {
+    let miningRate = parseFloat(localStorage.getItem('miningRate')) || 0.0001;
+    let totalMining = parseFloat(localStorage.getItem('totalMining')) || 0.0000;
+    let sessionCount = parseInt(localStorage.getItem('sessionCount')) || 0;
+    let isMining = false;
 
-        const miningRateEl = document.getElementById('miningRate');
-        const totalMiningEl = document.getElementById('totalMining');
-        const sessionCountEl = document.getElementById('sessionCount');
-        const startButton = document.getElementById('startButton');
-        const statusMessage = document.getElementById('statusMessage');
+    const miningRateEl = document.getElementById('miningRate');
+    const totalMiningEl = document.getElementById('totalMining');
+    const sessionCountEl = document.getElementById('sessionCount');
+    const startButton = document.getElementById('startButton');
+    const statusMessage = document.getElementById('statusMessage');
+    const sessionTimeEl = document.getElementById('sessionTime');
 
-        // Update UI
-        miningRateEl.textContent = miningRate.toFixed(4);
-        totalMiningEl.textContent = totalMining.toFixed(4);
-        sessionCountEl.textContent = sessionCount;
+    miningRateEl.textContent = miningRate.toFixed(4);
+    totalMiningEl.textContent = totalMining.toFixed(4);
+    sessionCountEl.textContent = sessionCount;
 
-        // Start Mining Logic
-        function startMining() {
-            if (isMining) return;
+    startButton.addEventListener('click', () => {
+        if (isMining) return;
+        isMining = true;
+        startButton.disabled = true;
+        statusMessage.textContent = 'মাইনিং চলতেছে...';
 
-            isMining = true;
-            startButton.disabled = true;
-            statusMessage.textContent = 'মাইনিং চলতেছে...';
+        let sessionMining = 0.0000;
+        let timeLeft = 12 * 60 * 60;
 
-            let sessionMining = 0.0000;
-            let timeLeft = 12 * 60 * 60; // 12 hours in seconds
+        const timer = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                sessionCount++;
+                miningRate += 0.0001;
+                totalMining += sessionMining;
 
-            const timer = setInterval(() => {
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    sessionCount++;
-                    miningRate += 0.0001;
-                    totalMining += sessionMining;
+                localStorage.setItem('miningRate', miningRate.toFixed(4));
+                localStorage.setItem('totalMining', totalMining.toFixed(4));
+                localStorage.setItem('sessionCount', sessionCount.toString());
 
-                    // Save to Local Storage
-                    localStorage.setItem('miningRate', miningRate);
-                    localStorage.setItem('totalMining', totalMining);
-                    localStorage.setItem('sessionCount', sessionCount);
+                isMining = false;
+                startButton.disabled = false;
+                statusMessage.textContent = '';
+                miningRateEl.textContent = miningRate.toFixed(4);
+                totalMiningEl.textContent = totalMining.toFixed(4);
+                sessionCountEl.textContent = sessionCount;
+            } else {
+                sessionMining += miningRate;
+                timeLeft -= 5;
 
-                    // Reset UI and Values
-                    sessionMining = 0.0000;
-                    isMining = false;
-                    startButton.disabled = false;
-                    statusMessage.textContent = '';
-                    miningRateEl.textContent = miningRate.toFixed(4);
-                    totalMiningEl.textContent = totalMining.toFixed(4);
-                    sessionCountEl.textContent = sessionCount;
-                } else {
-                    sessionMining += miningRate;
-                    timeLeft -= 5;
-
-                    // Update UI
-                    totalMiningEl.textContent = (totalMining + sessionMining).toFixed(4);
-                    const hours = Math.floor(timeLeft / 3600);
-                    const minutes = Math.floor((timeLeft % 3600) / 60);
-                    const seconds = timeLeft % 60;
-                    document.getElementById('sessionTime').textContent =
-                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }
-            }, 5000); // Update every 5 seconds
-        }
-
-        startButton.addEventListener('click', startMining);
+                totalMiningEl.textContent = (totalMining + sessionMining).toFixed(4);
+                const hours = Math.floor(timeLeft / 3600);
+                const minutes = Math.floor((timeLeft % 3600) / 60);
+                const seconds = timeLeft % 60;
+                sessionTimeEl.textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }, 5000);
+    });
+});
     </script>
 </body>
 </html>
