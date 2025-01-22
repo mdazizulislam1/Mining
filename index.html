@@ -59,22 +59,23 @@
 
     <script>
         // Local Storage Keys
+const MINING_START_TIME_KEY = "miningStartTime";
+const IS_MINING_KEY = "isMining";
 const TOTAL_MINING_KEY = "totalMining";
 const SESSION_MINING_KEY = "sessionMining";
 const SESSION_COUNT_KEY = "sessionCount";
-const MINING_START_TIME_KEY = "miningStartTime";
-const IS_MINING_KEY = "isMining";
 const OFFLINE_TIME_KEY = "offlineTime";
 
 // Initialize Variables
 let miningRate = 0.0001; // Initial rate
-let sessionMining = parseFloat(localStorage.getItem(SESSION_MINING_KEY)) || 0.0000;
 let totalMining = parseFloat(localStorage.getItem(TOTAL_MINING_KEY)) || 0.0000;
+let sessionMining = parseFloat(localStorage.getItem(SESSION_MINING_KEY)) || 0.0000;
 let sessionCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY)) || 0;
 let isMining = JSON.parse(localStorage.getItem(IS_MINING_KEY)) || false;
 let offlineTime = parseInt(localStorage.getItem(OFFLINE_TIME_KEY)) || 0; // Time spent offline
 let miningInterval;
 const sessionDuration = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 // DOM Elements
 const rateEl = document.getElementById("rate");
@@ -134,7 +135,7 @@ function calculateMissedMining() {
     const offlineDuration = offlineTime; // Time spent offline in ms
     if (offlineDuration > 0) {
         // Calculate missed mining during offline period
-        const missedMining = (offlineDuration / 5000) * miningRate;
+        const missedMining = (offlineDuration / fiveMinutes) * miningRate;
         sessionMining += missedMining;
         totalMining += missedMining;
 
