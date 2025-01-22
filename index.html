@@ -59,74 +59,111 @@
 
     <script>
         // Local Storage Keys
-        const TOTAL_MINING_KEY = "totalMining";
-        const SESSION_MINING_KEY = "sessionMining";
-        const SESSION_COUNT_KEY = "sessionCount";
+const TOTAL_MINING_KEY = "totalMining";
+const SESSION_MINING_KEY = "sessionMining";
+const SESSION_COUNT_KEY = "sessionCount";
+const MINING_START_TIME_KEY = "miningStartTime";
+const IS_MINING_KEY = "isMining";
 
-        // Initialize Variables
-        let miningRate = 0.0001; // Initial rate
-        let sessionMining = parseFloat(localStorage.getItem(SESSION_MINING_KEY)) || 0.0000;
-        let totalMining = parseFloat(localStorage.getItem(TOTAL_MINING_KEY)) || 0.0000;
-        let sessionCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY)) || 0;
-        let miningInterval;
-        const sessionDuration = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+// Initialize Variables
+let miningRate = 0.0001; // Initial rate
+let sessionMining = parseFloat(localStorage.getItem(SESSION_MINING_KEY)) || 0.0000;
+let totalMining = parseFloat(localStorage.getItem(TOTAL_MINING_KEY)) || 0.0000;
+let sessionCount = parseInt(localStorage.getItem(SESSION_COUNT_KEY)) || 0;
+let isMining = JSON.parse(localStorage.getItem(IS_MINING_KEY)) || false;
+let miningInterval;
+const sessionDuration = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
-        // DOM Elements
-        const rateEl = document.getElementById("rate");
-        const sessionMiningEl = document.getElementById("session-mining");
-        const totalMiningEl = document.getElementById("total-mining");
-        const sessionsEl = document.getElementById("sessions");
-        const startButton = document.getElementById("start-button");
-        const statusEl = document.getElementById("status");
+// DOM Elements
+const rateEl = document.getElementById("rate");
+const sessionMiningEl = document.getElementById("session-mining");
+const totalMiningEl = document.getElementById("total-mining");
+const sessionsEl = document.getElementById("sessions");
+const startButton = document.getElementById("start-button");
+const statusEl = document.getElementById("status");
 
-        // Update UI
-        function updateUI() {
-            sessionMiningEl.textContent = sessionMining.toFixed(4) + " DOGE";
-            totalMiningEl.textContent = totalMining.toFixed(4) + " DOGE";
-            sessionsEl.textContent = sessionCount;
+// Update UI
+function updateUI() {
+    sessionMiningEl.textContent = sessionMining.toFixed(4) + " DOGE";
+    totalMiningEl.textContent = totalMining.toFixed(4) + " DOGE";
+    sessionsEl.textContent = sessionCount;
+}
+
+// Start Mining
+function startMining() {
+    // Save the start time if it's not already saved
+    if (!localStorage.getItem(MINING_START_TIME_KEY)) {
+        localStorage.setItem(MINING_START_TIME_KEY, Date.now());
+    }
+
+    // Update status and button
+    statusEl.textContent = "Mining is running...";
+    startButton.disabled = true;
+    localStorage.setItem(IS_MINING_KEY, true);
+
+    // Calculate elapsed time
+    let startTime = parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+
+    miningInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+
+        // Add mining rate every 5 seconds
+        if (elapsed % 5000 < 50) {
+            sessionMining += miningRate;
+            totalMining += miningRate;
+            localStorage.setItem(SESSION_MINING_KEY, sessionMining.toFixed(4));
+            localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
+            updateUI();
         }
 
-        // Start Mining
-        function startMining() {
-            statusEl.textContent = "Mining is running...";
-            startButton.disabled = true;
-
-            let startTime = Date.now();
-            miningInterval = setInterval(() => {
-                const elapsed = Date.now() - startTime;
-
-                // Add mining rate every 5 seconds
-                if (elapsed % 5000 < 50) {
-                    sessionMining += miningRate;
-                    totalMining += miningRate;
-                    localStorage.setItem(SESSION_MINING_KEY, sessionMining.toFixed(4));
-                    localStorage.setItem(TOTAL_MINING_KEY, totalMining.toFixed(4));
-                    updateUI();
-                }
-
-                // End session after 12 hours
-                if (elapsed >= sessionDuration) {
-                    clearInterval(miningInterval);
-                    sessionCount++;
-                    miningRate += 0.0001; // Increase rate after each session
-                    localStorage.setItem(SESSION_COUNT_KEY, sessionCount);
-                    localStorage.removeItem(SESSION_MINING_KEY); // Reset session mining
-                    sessionMining = 0;
-                    updateUI();
-                    startButton.disabled = false;
-                    statusEl.textContent = "";
-                }
-            }, 1000);
+        // End session after 12 hours
+        if (elapsed >= sessionDuration) {
+            clearInterval(miningInterval);
+            sessionCount++;
+            miningRate += 0.0001; // Increase rate after each session
+            localStorage.setItem(SESSION_COUNT_KEY, sessionCount);
+            localStorage.removeItem(SESSION_MINING_KEY); // Reset session mining
+            localStorage.removeItem(MINING_START_TIME_KEY); // Reset start time
+            localStorage.setItem(IS_MINING_KEY, false);
+            sessionMining = 0;
+            updateUI();
+            startButton.disabled = false;
+            statusEl.textContent = "";
         }
+    }, 1000);
+}
 
-        // Event Listener for Start Button
-        startButton.addEventListener("click", () => {
+// Resume Mining if Active
+function resumeMining() {
+    if (isMining) {
+        const elapsed = Date.now() - parseInt(localStorage.getItem(MINING_START_TIME_KEY));
+        if (elapsed < sessionDuration) {
             startMining();
-        });
+        } else {
+            // Reset session if 12 hours have passed
+            sessionCount++;
+            miningRate += 0.0001;
+            localStorage.setItem(SESSION_COUNT_KEY, sessionCount);
+            localStorage.removeItem(SESSION_MINING_KEY);
+            localStorage.removeItem(MINING_START_TIME_KEY);
+            localStorage.setItem(IS_MINING_KEY, false);
+            sessionMining = 0;
+            updateUI();
+            startButton.disabled = false;
+            statusEl.textContent = "";
+        }
+    }
+}
 
-        // Initialize UI on Load
-        rateEl.textContent = miningRate.toFixed(4) + " DOGE";
-        updateUI();
+// Event Listener for Start Button
+startButton.addEventListener("click", () => {
+    startMining();
+});
+
+// Initialize UI on Load
+rateEl.textContent = miningRate.toFixed(4) + " DOGE";
+updateUI();
+resumeMining();
     </script>
 </body>
 </html>
